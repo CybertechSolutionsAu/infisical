@@ -1137,11 +1137,7 @@ export const registerAdminRouter = async (server: FastifyZodProvider) => {
         })
       }
     },
-    onRequest: (req, res, done) => {
-      verifyAuth([AuthMode.JWT, AuthMode.IDENTITY_ACCESS_TOKEN])(req, res, () => {
-        verifySuperAdmin(req, res, done);
-      });
-    },
+    onRequest: verifyAuth([AuthMode.JWT, AuthMode.IDENTITY_ACCESS_TOKEN]),
     handler: async (req) => {
       const start = Date.now();
       const ranDaily = req.query.scope === "daily" || req.query.scope === "all";
@@ -1176,11 +1172,7 @@ export const registerAdminRouter = async (server: FastifyZodProvider) => {
         })
       }
     },
-    onRequest: (req, res, done) => {
-      verifyAuth([AuthMode.JWT, AuthMode.IDENTITY_ACCESS_TOKEN])(req, res, () => {
-        verifySuperAdmin(req, res, done);
-      });
-    },
+    onRequest: verifyAuth([AuthMode.JWT, AuthMode.IDENTITY_ACCESS_TOKEN]),
     handler: async () => {
       return server.services.dailyResourceCleanUp.getDbSize();
     }
