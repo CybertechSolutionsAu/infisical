@@ -2170,6 +2170,7 @@ export const registerRoutes = async (
 
   // DAILY
   const dailyResourceCleanUp = dailyResourceCleanUpQueueServiceFactory({
+    db,
     scimService,
     auditLogDAL,
     auditLogService,
@@ -2806,26 +2807,28 @@ export const registerRoutes = async (
     internalCaFns
   });
 
-  await secretRotationV2QueueServiceFactory({
-    secretRotationV2Service,
-    secretRotationV2DAL,
-    queueService,
-    projectDAL,
-    projectMembershipDAL,
-    smtpService,
-    notificationService
-  });
+  if (process.env.DISABLE_CRONJOBS !== "true") {
+    await secretRotationV2QueueServiceFactory({
+      secretRotationV2Service,
+      secretRotationV2DAL,
+      queueService,
+      projectDAL,
+      projectMembershipDAL,
+      smtpService,
+      notificationService
+    });
 
-  await appConnectionCredentialRotationQueueFactory({
-    queueService,
-    appConnectionCredentialRotationDAL,
-    appConnectionCredentialRotationService,
-    smtpService,
-    notificationService,
-    projectMembershipDAL,
-    projectDAL,
-    orgDAL
-  });
+    await appConnectionCredentialRotationQueueFactory({
+      queueService,
+      appConnectionCredentialRotationDAL,
+      appConnectionCredentialRotationService,
+      smtpService,
+      notificationService,
+      projectMembershipDAL,
+      projectDAL,
+      orgDAL
+    });
+  }
 
   const secretScanningV2Queue = secretScanningV2QueueServiceFactory({
     auditLogService,
@@ -3101,30 +3104,34 @@ export const registerRoutes = async (
   }
 
   await kmsService.startService(hsmStatus);
-  await telemetryQueue.startTelemetryCheck();
-  await telemetryQueue.startAggregatedEventsJob();
-  await dailyResourceCleanUp.init();
-  await healthAlert.init();
-  await pkiSyncCleanup.init();
-  pkiDiscoveryQueue.startPkiDiscoveryScanQueue();
-  pamDiscoveryQueue.startPamDiscoveryQueue();
-  await pamAccountRotation.init();
-  pamSessionExpirationService.init();
-  pamSessionAiSummaryService.init();
-  await dailyReminderQueueService.startDailyRemindersJob();
-  await secretSyncQueue.startDailySecretSyncRetryJob();
-  await dailyReminderQueueService.startSecretReminderMigrationJob();
-  await dailyExpiringPkiItemAlert.startSendingAlerts();
-  await certificateAuthorityQueue.startCaCrlRebuildJob();
-  await pkiSubscriberQueue.startDailyAutoRenewalJob();
-  await pkiAlertV2Queue.init();
-  await certificateCleanupQueue.init();
-  await certificateV3Queue.init();
-  await digicertCaQueue.init();
-  await caAutoRenewalQueue.startDailyAutoRenewalJob();
-  await microsoftTeamsService.start();
-  await eventBusService.init();
+  if (process.env.DISABLE_CRONJOBS !== "true") {
+    await telemetryQueue.startTelemetryCheck();
+    await telemetryQueue.startAggregatedEventsJob();
+    await dailyResourceCleanUp.init();
+    await healthAlert.init();
+    await pkiSyncCleanup.init();
+    pkiDiscoveryQueue.startPkiDiscoveryScanQueue();
+    pamDiscoveryQueue.startPamDiscoveryQueue();
+    await pamAccountRotation.init();
+    pamSessionExpirationService.init();
+    pamSessionAiSummaryService.init();
+    await dailyReminderQueueService.startDailyRemindersJob();
 
+    await secretSyncQueue.startDailySecretSyncRetryJob();
+    await dailyReminderQueueService.startSecretReminderMigrationJob();
+    await dailyExpiringPkiItemAlert.startSendingAlerts();
+    await certificateAuthorityQueue.startCaCrlRebuildJob();
+    await pkiSubscriberQueue.startDailyAutoRenewalJob();
+    await pkiAlertV2Queue.init();
+    await certificateCleanupQueue.init();
+    await certificateV3Queue.init();
+    await digicertCaQueue.init();
+    await caAutoRenewalQueue.startDailyAutoRenewalJob();
+    await microsoftTeamsService.start();
+    await eventBusService.init();
+  } else {
+    logger.info("Background queue jobs disabled via DISABLE_CRONJOBS env var; skipping init");
+  }
   // inject all services
   server.decorate<FastifyZodProvider["services"]>("services", {
     login: loginService,
@@ -3140,6 +3147,7 @@ export const registerRoutes = async (
     oidc: oidcService,
     authToken: tokenService,
     superAdmin: superAdminService,
+    dailyResourceCleanUp,
     offlineUsageReport: offlineUsageReportService,
     project: projectService,
     projectMembership: projectMembershipService,

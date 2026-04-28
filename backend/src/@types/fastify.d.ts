@@ -151,6 +151,7 @@ import { TSecretValidationRuleServiceFactory } from "@app/services/secret-valida
 import { TServiceTokenServiceFactory } from "@app/services/service-token/service-token-service";
 import { TSignerServiceFactory } from "@app/services/signer/signer-service";
 import { TSlackServiceFactory } from "@app/services/slack/slack-service";
+import { TDailyResourceCleanUpQueueServiceFactory } from "@app/services/resource-cleanup/resource-cleanup-queue";
 import { TSuperAdminServiceFactory } from "@app/services/super-admin/super-admin-service";
 import { TTelemetryServiceFactory } from "@app/services/telemetry/telemetry-service";
 import { TTotpServiceFactory } from "@app/services/totp/totp-service";
@@ -264,6 +265,7 @@ declare module "fastify" {
       org: TOrgServiceFactory;
       oidc: TOidcConfigServiceFactory;
       superAdmin: TSuperAdminServiceFactory;
+      dailyResourceCleanUp: TDailyResourceCleanUpQueueServiceFactory;
       user: TUserServiceFactory;
       group: TGroupServiceFactory;
       groupProject: TGroupProjectServiceFactory;

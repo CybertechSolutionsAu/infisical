@@ -1117,4 +1117,72 @@ export const registerAdminRouter = async (server: FastifyZodProvider) => {
       return { emailDomain };
     }
   });
+
+  server.route({
+    method: "POST",
+    url: "/maintenance/run-cleanup",
+    config: {
+      rateLimit: writeLimit
+    },
+    schema: {
+      operationId: "runResourceCleanup",
+      querystring: z.object({
+        scope: z.enum(["daily", "hourly", "all"]).default("all")
+      }),
+      response: {
+        200: z.object({
+          ranDaily: z.boolean(),
+          ranHourly: z.boolean(),
+          durationMs: z.number()
+        })
+      }
+    },
+    onRequest: (req, res, done) => {
+      verifyAuth([AuthMode.JWT, AuthMode.IDENTITY_ACCESS_TOKEN])(req, res, () => {
+        verifySuperAdmin(req, res, done);
+      });
+    },
+    handler: async (req) => {
+      const start = Date.now();
+      const ranDaily = req.query.scope === "daily" || req.query.scope === "all";
+      const ranHourly = req.query.scope === "hourly" || req.query.scope === "all";
+      if (ranHourly) await server.services.dailyResourceCleanUp.runHourlyCleanup();
+      if (ranDaily) await server.services.dailyResourceCleanUp.runDailyCleanup();
+      return { ranDaily, ranHourly, durationMs: Date.now() - start };
+    }
+  });
+
+  server.route({
+    method: "GET",
+    url: "/maintenance/db-size",
+    config: {
+      rateLimit: readLimit
+    },
+    schema: {
+      operationId: "getDatabaseSize",
+      response: {
+        200: z.object({
+          databaseBytes: z.string(),
+          databasePretty: z.string(),
+          tables: z.array(
+            z.object({
+              schema: z.string(),
+              name: z.string(),
+              totalBytes: z.string(),
+              totalPretty: z.string(),
+              rowCount: z.string()
+            })
+          )
+        })
+      }
+    },
+    onRequest: (req, res, done) => {
+      verifyAuth([AuthMode.JWT, AuthMode.IDENTITY_ACCESS_TOKEN])(req, res, () => {
+        verifySuperAdmin(req, res, done);
+      });
+    },
+    handler: async () => {
+      return server.services.dailyResourceCleanUp.getDbSize();
+    }
+  });
 };
