@@ -45,6 +45,7 @@ fi
 
 echo "==> Building (this is a heavy build; first run takes 15–20 min)"
 docker build \
+  --platform linux/amd64 \
   -f "$DOCKERFILE" \
   -t "$IMAGE:$VERSION" \
   -t "$IMAGE:$ROLLING_TAG" \
